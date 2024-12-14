@@ -1,5 +1,7 @@
 import time
 from instagrapi import Client
+import requests
+from requests.exceptions import Timeout
 
 SAD_TAGS = ["#Türkiye", "#Güncel", "#Haber", "#Spor", "#Sad", "#Sadedit", "#kesfet", "#keşfet"]
 
@@ -48,7 +50,16 @@ class InstagramBot:
         """Download the video from the given clip."""
         try:
             timestamp = int(time.time())
-            video_path = f"latest_clip_{timestamp}.mp4"
-            return self.client.video_download_by_url(clip.clip.video_url, video_path)
+            video_path = f"latest_clip_{timestamp}"
+            video_url = clip.clip.video_url
+            # Retry mechanism
+            for attempt in range(3):
+                try:
+                    return self.client.video_download_by_url(video_url, video_path)
+                except Timeout:
+                    print(f"Attempt {attempt + 1} failed due to timeout. Retrying...")
+                    time.sleep(2)  # Wait before retrying
+
+            print("Failed to download video after multiple attempts.")
         except Exception as e:
             print(f"An error occurred while downloading the clip: {str(e)}")
